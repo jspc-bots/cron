@@ -2,8 +2,13 @@
 
 The IRC bot does two things:
 
-1. It runs a series of pre-determined commands on a schedule
-1. It runs some user-supplied, ephemeral commands on a schedule
+1. It runs a series of pre-determined irc commands on a schedule
+1. It runs some user-supplied, ephemeral irc commands on a schedule
+
+These commands are useful for a number of reasons:
+
+1. We can update topics regularly
+1. We can send daily messages, like news headlines, or daily calendar updates
 
 Things to consider:
 
