@@ -137,12 +137,12 @@ func (b *Bot) showSchedule(_ [][]byte) (err error) {
 	sb := strings.Builder{}
 
 	table := tablewriter.NewWriter(&sb)
-	table.SetHeader([]string{"ID", "Schedule", "Command", "Target", "Args"})
+	table.SetHeader([]string{"ID", "Schedule", "Command", "Target", "Args", "Next Run"})
 
 	for _, entry := range b.cron.Entries() {
 		c := entry.Job.(Command)
 
-		table.Append([]string{fmt.Sprintf("%v", entry.ID), c.Schedule, c.Command, c.Target, c.Args})
+		table.Append([]string{fmt.Sprintf("%v", entry.ID), c.Schedule, c.Command, c.Target, c.Args, entry.Next.Local().String()})
 	}
 
 	table.Render()
@@ -150,6 +150,8 @@ func (b *Bot) showSchedule(_ [][]byte) (err error) {
 	for _, line := range strings.Split(sb.String(), "\n") {
 		b.client.Cmd.Message(Chan, line)
 	}
+
+	b.client.Cmd.Messagef(Chan, "(as far as I know, it's now %s)", time.Now().Local().String())
 
 	return
 }
