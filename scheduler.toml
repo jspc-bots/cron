@@ -1,0 +1,11 @@
+[daily-topic]
+Schedule = "@midnight"
+Command = "TOPIC"
+Target = "#dashboard"
+Args = "The James Condron Experience. The date is {{ .Date }} and everything is fucking groovy"
+
+[ping]
+Schedule = "@every 1m"
+Command = "PRIVMSG"
+Target = "#dashboard"
+Args = "Hello, world!"
