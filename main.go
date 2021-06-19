@@ -20,6 +20,7 @@ var (
 	Password     = os.Getenv("SASL_PASSWORD")
 	Server       = os.Getenv("SERVER")
 	VerifyTLS    = os.Getenv("VERIFY_TLS") == "true"
+	AllowList    = os.Getenv("ALLOW_LIST")
 
 	TZ = must(time.LoadLocation(os.Getenv("TZ"))).(*time.Location)
 )
@@ -48,7 +49,7 @@ func main() {
 		}
 	}
 
-	c, err := New(Username, Password, Server, VerifyTLS, cron.New(cron.WithLocation(TZ)))
+	c, err := New(Username, Password, Server, AllowList, VerifyTLS, cron.New(cron.WithLocation(TZ)))
 	if err != nil {
 		panic(err)
 	}

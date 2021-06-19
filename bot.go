@@ -16,15 +16,17 @@ import (
 )
 
 type Bot struct {
-	client  *girc.Client
-	cron    *cron.Cron
-	routing map[*regexp.Regexp]handlerFunc
+	client    *girc.Client
+	cron      *cron.Cron
+	routing   map[*regexp.Regexp]handlerFunc
+	allowList []string
 }
 
-type handlerFunc func(groups [][]byte) error
+type handlerFunc func(originator string, groups [][]byte) error
 
-func New(user, password, server string, verify bool, c *cron.Cron) (b Bot, err error) {
+func New(user, password, server, allows string, verify bool, c *cron.Cron) (b Bot, err error) {
 	b.cron = c
+	b.allowList = strings.Split(allows, ",")
 
 	u, err := url.Parse(server)
 	if err != nil {
@@ -85,7 +87,7 @@ func (b Bot) messageRouter(c *girc.Client, e girc.Event) {
 
 	for r, f := range b.routing {
 		if r.Match(msg) {
-			err = f(r.FindAllSubmatch(msg, -1)[0])
+			err = f(e.Source.Name, r.FindAllSubmatch(msg, -1)[0])
 			if err != nil {
 				log.Printf("%v error: %s", f, err)
 			}
@@ -97,9 +99,11 @@ func (b Bot) messageRouter(c *girc.Client, e girc.Event) {
 	// Ignore; not a message for us
 }
 
-func (b *Bot) addSchedule(groups [][]byte) (err error) {
-	if len(groups) != 4 {
-		return fmt.Errorf("somehow ended up with %d groups, expected 3", len(groups))
+func (b *Bot) addSchedule(originator string, groups [][]byte) (err error) {
+	if !contains(b.allowList, originator) {
+		err = fmt.Errorf("%s is not in the scheduler allow list", originator)
+
+		b.client.Cmd.Messagef(Chan, err.Error())
 	}
 
 	schedule := string(groups[1])
@@ -124,16 +128,36 @@ func (b *Bot) addSchedule(groups [][]byte) (err error) {
 	}
 
 	b.client.Cmd.Message(Chan, "Added to schedule, the schedule now looks like:")
-	b.showSchedule(make([][]byte, 0))
+	b.showSchedule("", make([][]byte, 0))
 
 	return
 }
 
-func (b *Bot) deleteSchedule(groups [][]byte) (err error) {
+func (b *Bot) deleteSchedule(originator string, groups [][]byte) (err error) {
+	if !contains(b.allowList, originator) {
+		err = fmt.Errorf("%s is not in the scheduler allow list", originator)
+
+		b.client.Cmd.Messagef(Chan, err.Error())
+	}
+
+	id, err := strconv.Atoi(string(groups[1]))
+	if err != nil {
+		err = fmt.Errorf("%s is not a valid ID", groups[1])
+
+		b.client.Cmd.Messagef(Chan, err.Error())
+
+		return
+	}
+
+	b.cron.Remove(cron.EntryID(id))
+
+	b.client.Cmd.Message(Chan, "Removed from schedule, the schedule now looks like:")
+	b.showSchedule("", make([][]byte, 0))
+
 	return
 }
 
-func (b *Bot) showSchedule(_ [][]byte) (err error) {
+func (b *Bot) showSchedule(_ string, _ [][]byte) (err error) {
 	sb := strings.Builder{}
 
 	table := tablewriter.NewWriter(&sb)
@@ -154,4 +178,14 @@ func (b *Bot) showSchedule(_ [][]byte) (err error) {
 	b.client.Cmd.Messagef(Chan, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
 
 	return
+}
+
+func contains(l []string, s string) bool {
+	for _, ss := range l {
+		if s == ss {
+			return true
+		}
+	}
+
+	return false
 }
