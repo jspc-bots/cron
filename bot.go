@@ -1,114 +1,62 @@
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
-	"log"
-	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jspc/bottom"
 	"github.com/lrstanley/girc"
 	"github.com/olekukonko/tablewriter"
 	"github.com/robfig/cron/v3"
 )
 
-type Bot struct {
-	client    *girc.Client
-	cron      *cron.Cron
-	routing   map[*regexp.Regexp]handlerFunc
+type AllowListMiddleware struct {
 	allowList []string
 }
 
-type handlerFunc func(originator string, groups [][]byte) error
+func (a AllowListMiddleware) Do(ctx bottom.Context, _ girc.Event) error {
+	sender := ctx["sender"].(string)
+
+	if !contains(a.allowList, sender) {
+		return fmt.Errorf("sender %s is not in the scheduler allow list", sender)
+	}
+
+	return nil
+}
+
+type Bot struct {
+	bottom bottom.Bottom
+	cron   *cron.Cron
+}
 
 func New(user, password, server, allows string, verify bool, c *cron.Cron) (b Bot, err error) {
 	b.cron = c
-	b.allowList = strings.Split(allows, ",")
-
-	u, err := url.Parse(server)
+	b.bottom, err = bottom.New(user, password, server, verify)
 	if err != nil {
 		return
 	}
 
-	config := girc.Config{
-		Server: u.Hostname(),
-		Port:   must(strconv.Atoi(u.Port())).(int),
-		Nick:   Nick,
-		User:   Nick,
-		Name:   Nick,
-		SASL: &girc.SASLPlain{
-			User: user,
-			Pass: password,
-		},
-		SSL: u.Scheme == "ircs",
-		TLSConfig: &tls.Config{
-			InsecureSkipVerify: !verify,
-		},
-	}
-
-	b.client = girc.New(config)
-	err = b.addHandlers()
-
-	return
-}
-
-func (b *Bot) addHandlers() (err error) {
-	b.client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
+	b.bottom.Client.Handlers.Add(girc.CONNECTED, func(c *girc.Client, e girc.Event) {
 		c.Cmd.Join(Chan)
 	})
 
-	b.routing = make(map[*regexp.Regexp]handlerFunc)
+	router := bottom.NewRouter()
+	router.AddRoute(`schedule\s+\"(.*)\"\s+([A-Z]+)\s+\"(.*)\"`, b.addSchedule)
+	router.AddRoute(`show\s+schedule[s]?`, b.showSchedule)
+	router.AddRoute(`unschedule\s+(\d+)`, b.deleteSchedule)
 
-	// Matches `schedule "@every 10ms" PRIVMSG "hello world"` in order to add a new schedule
-	b.routing[regexp.MustCompile(`schedule\s+\"(.*)\"\s+([A-Z]+)\s+\"(.*)\"`)] = b.addSchedule
-	b.routing[regexp.MustCompile(`show\s+schedule[s]?`)] = b.showSchedule
-	b.routing[regexp.MustCompile(`unschedule\s+\"(.+)\"`)] = b.deleteSchedule
-
-	// Route messages
-	b.client.Handlers.Add(girc.PRIVMSG, b.messageRouter)
+	b.bottom.Middlewares.Push(AllowListMiddleware{strings.Split(allows, ",")})
+	b.bottom.Middlewares.Push(router)
 
 	return
 }
 
-func (b Bot) messageRouter(c *girc.Client, e girc.Event) {
-	var err error
-
-	// skip messages older than a minute (assume it's the replayer)
-	cutOff := time.Now().Add(0 - time.Minute)
-	if e.Timestamp.Before(cutOff) {
-		// ignore
-		return
-	}
-
-	msg := []byte(e.Last())
-
-	for r, f := range b.routing {
-		if r.Match(msg) {
-			err = f(e.Source.Name, r.FindAllSubmatch(msg, -1)[0])
-			if err != nil {
-				log.Printf("%v error: %s", f, err)
-			}
-
-			return
-		}
-	}
-
-	// Ignore; not a message for us
-}
-
-func (b *Bot) addSchedule(originator string, groups [][]byte) (err error) {
-	if !contains(b.allowList, originator) {
-		err = fmt.Errorf("%s is not in the scheduler allow list", originator)
-
-		b.client.Cmd.Messagef(Chan, err.Error())
-	}
-
-	schedule := string(groups[1])
-	command := string(groups[2])
-	args := string(groups[3])
+func (b *Bot) addSchedule(originator string, groups []string) (err error) {
+	schedule := groups[1]
+	command := groups[2]
+	args := groups[3]
 
 	target := Chan
 
@@ -117,47 +65,35 @@ func (b *Bot) addSchedule(originator string, groups [][]byte) (err error) {
 		Command:  command,
 		Target:   target,
 		Args:     args,
-		irc:      b.client,
+		irc:      b.bottom.Client,
 	}
 
 	_, err = b.cron.AddJob(schedule, c)
 	if err != nil {
-		b.client.Cmd.Messagef(Chan, "Couldn't add to the schedule: %v", err)
-
 		return
 	}
 
-	b.client.Cmd.Message(Chan, "Added to schedule, the schedule now looks like:")
-	b.showSchedule("", make([][]byte, 0))
+	b.bottom.Client.Cmd.Message(Chan, "Added to schedule, the schedule now looks like:")
+	b.showSchedule("", make([]string, 0))
 
 	return
 }
 
-func (b *Bot) deleteSchedule(originator string, groups [][]byte) (err error) {
-	if !contains(b.allowList, originator) {
-		err = fmt.Errorf("%s is not in the scheduler allow list", originator)
-
-		b.client.Cmd.Messagef(Chan, err.Error())
-	}
-
-	id, err := strconv.Atoi(string(groups[1]))
+func (b *Bot) deleteSchedule(originator string, groups []string) (err error) {
+	id, err := strconv.Atoi(groups[1])
 	if err != nil {
-		err = fmt.Errorf("%s is not a valid ID", groups[1])
-
-		b.client.Cmd.Messagef(Chan, err.Error())
-
 		return
 	}
 
 	b.cron.Remove(cron.EntryID(id))
 
-	b.client.Cmd.Message(Chan, "Removed from schedule, the schedule now looks like:")
-	b.showSchedule("", make([][]byte, 0))
+	b.bottom.Client.Cmd.Message(Chan, "Removed from schedule, the schedule now looks like:")
+	b.showSchedule("", make([]string, 0))
 
 	return
 }
 
-func (b *Bot) showSchedule(_ string, _ [][]byte) (err error) {
+func (b *Bot) showSchedule(_ string, _ []string) (err error) {
 	sb := strings.Builder{}
 
 	table := tablewriter.NewWriter(&sb)
@@ -172,10 +108,10 @@ func (b *Bot) showSchedule(_ string, _ [][]byte) (err error) {
 	table.Render()
 
 	for _, line := range strings.Split(sb.String(), "\n") {
-		b.client.Cmd.Message(Chan, line)
+		b.bottom.Client.Cmd.Message(Chan, line)
 	}
 
-	b.client.Cmd.Messagef(Chan, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
+	b.bottom.Client.Cmd.Messagef(Chan, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
 
 	return
 }

@@ -55,7 +55,7 @@ func main() {
 	}
 
 	for _, command := range commands {
-		command.irc = c.client
+		command.irc = c.bottom.Client
 
 		_, err = c.cron.AddJob(command.Schedule, command)
 		if err != nil {
@@ -64,7 +64,7 @@ func main() {
 	}
 
 	go func() {
-		log.Panic(c.client.Connect())
+		log.Panic(c.bottom.Client.Connect())
 	}()
 
 	c.cron.Run()
