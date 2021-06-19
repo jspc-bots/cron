@@ -20,6 +20,9 @@ var (
 	Password     = os.Getenv("SASL_PASSWORD")
 	Server       = os.Getenv("SERVER")
 	VerifyTLS    = os.Getenv("VERIFY_TLS") == "true"
+	AllowList    = os.Getenv("ALLOW_LIST")
+
+	TZ = must(time.LoadLocation(os.Getenv("TZ"))).(*time.Location)
 )
 
 func must(i interface{}, err error) interface{} {
@@ -46,18 +49,13 @@ func main() {
 		}
 	}
 
-	loc, err := time.LoadLocation("Asia/Seoul")
-	if err != nil {
-		panic(err)
-	}
-
-	c, err := New(Username, Password, Server, VerifyTLS, cron.New(cron.WithLocation(loc)))
+	c, err := New(Username, Password, Server, AllowList, VerifyTLS, cron.New(cron.WithLocation(TZ)))
 	if err != nil {
 		panic(err)
 	}
 
 	for _, command := range commands {
-		command.irc = c.client
+		command.irc = c.bottom.Client
 
 		_, err = c.cron.AddJob(command.Schedule, command)
 		if err != nil {
@@ -66,7 +64,7 @@ func main() {
 	}
 
 	go func() {
-		log.Panic(c.client.Connect())
+		log.Panic(c.bottom.Client.Connect())
 	}()
 
 	c.cron.Run()

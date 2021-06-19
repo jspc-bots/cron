@@ -1,9 +1,9 @@
 # IRC Timer Bot
 
-The IRC bot does two things:
+The IRC bot runs a series of pre-determined irc commands on a schedule. It also accepts new commands from trusted users. These users need to be passed to the bot via an env var, and the bot restarted because:
 
-1. It runs a series of pre-determined irc commands on a schedule
-1. It runs some user-supplied, ephemeral irc commands on a schedule
+1. The permissions the bot potentially needs (like chanops for setting topics) means the bot could be easily abused
+1. Restarting the bot is a conscious decision, and so is less likely to be done accidentally/ through security flaw
 
 These commands are useful for a number of reasons:
 
@@ -13,7 +13,19 @@ These commands are useful for a number of reasons:
 Things to consider:
 
 1. Predetermined commands are hardcoded to a file
-1. Commands passed via messages in IRC are ephemeral: we don't persist them. If there's a need, then PRs are welcome: I just don't want to have to make decisions about how these things persist on day one
+1. Ephemeral commands (as in: added via irc) are not persisted: they will go away when the bot restarts.
+1. Changes/ new commands require the bot to be restarted
+
+## Configuration
+
+Configuration comes from the environment:
+
+1. `SCHEDULE_TOML` - see below; a toml file containing pre-determined commands
+1. `SASL_USER` and `SASL_PASSWORD` - username/password combo for your IRC server
+1. `SERVER` - IRC server to connect to, in `irc://servr:port` / `ircs://server:port` form
+1. `VERIFY_TLS` - whether, on TLS enabled servers, to verify certs; useful for self-signed localhost server
+1. `TZ` - timezone to apply schedules to, in `Asia/Seoul` / `Europe/London` form; if empty, loads UTC
+1. `ALLOW_LIST` - comma seperated list of nicks which are allowed to update schedules
 
 
 ## Predetermined commands
