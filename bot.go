@@ -73,8 +73,7 @@ func (b *Bot) addSchedule(originator string, groups []string) (err error) {
 		return
 	}
 
-	b.bottom.Client.Cmd.Message(Chan, "Added to schedule, the schedule now looks like:")
-	b.showSchedule("", make([]string, 0))
+	b.bottom.Client.Cmd.Message(Chan, "Added new job schedule. Use /msg scheduler show schedule to see schedule (this is a noisy command and may be flood protected, be kind to other people on this channel)")
 
 	return
 }
@@ -87,8 +86,7 @@ func (b *Bot) deleteSchedule(originator string, groups []string) (err error) {
 
 	b.cron.Remove(cron.EntryID(id))
 
-	b.bottom.Client.Cmd.Message(Chan, "Removed from schedule, the schedule now looks like:")
-	b.showSchedule("", make([]string, 0))
+	b.bottom.Client.Cmd.Messagef(Chan, "Removed job %d from schedule. Use /msg scheduler show schedule to see schedule (this is a noisy command and may be flood protected, be kind to other people on this channel)", id)
 
 	return
 }
@@ -102,7 +100,12 @@ func (b *Bot) showSchedule(_ string, _ []string) (err error) {
 	for _, entry := range b.cron.Entries() {
 		c := entry.Job.(Command)
 
-		table.Append([]string{fmt.Sprintf("%v", entry.ID), c.Schedule, c.Command, c.Target, c.Args, entry.Next.In(TZ).String()})
+		args := c.Args
+		if len(args) > 27 {
+			args = fmt.Sprintf("%s...", args[:12])
+		}
+
+		table.Append([]string{fmt.Sprintf("%v", entry.ID), c.Schedule, c.Command, c.Target, args, entry.Next.In(TZ).String()})
 	}
 
 	table.Render()
