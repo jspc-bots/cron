@@ -98,7 +98,10 @@ func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 	table.SetHeader([]string{"ID", "Schedule", "Command", "Target", "Args", "Next Run"})
 
 	for _, entry := range b.cron.Entries() {
-		c := entry.Job.(Command)
+		c, ok := entry.Job.(Command)
+		if !ok {
+			continue
+		}
 
 		args := c.Args
 		if len(args) > 15 {
