@@ -54,6 +54,9 @@ func main() {
 		panic(err)
 	}
 
+	d := DefaultJob{irc: c.bottom.Client}
+	c.cron.AddJob("0 7 * * *", d)
+
 	for _, command := range commands {
 		log.Printf("adding %+v", command)
 
