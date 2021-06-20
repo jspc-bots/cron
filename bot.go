@@ -111,7 +111,7 @@ func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 	table.Render()
 
 	for _, line := range strings.Split(sb.String(), "\n") {
-		b.bottom.Client.Cmd.Message(Chan, line)
+		b.bottom.Client.Cmd.Message(channel, line)
 	}
 
 	b.bottom.Client.Cmd.Messagef(channel, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
