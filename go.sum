@@ -1,7 +1,7 @@
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/jspc/bottom v1.0.0 h1:HOPOtrCG/GL0lM3EAXQKIp+cPn2+7mibcP/NV3yz/Ik=
-github.com/jspc/bottom v1.0.0/go.mod h1:ZT+gMOUb046Xd8TjH16FlqGQcaj/EccWJ4UJax3lXi8=
+github.com/jspc/bottom v1.1.0 h1:Ft9qsK4WWWnmIH++5Cu/tdATuH8fmXKyIpVEPOkbX+o=
+github.com/jspc/bottom v1.1.0/go.mod h1:ZT+gMOUb046Xd8TjH16FlqGQcaj/EccWJ4UJax3lXi8=
 github.com/lrstanley/girc v0.0.0-20210611213246-771323f1624b h1:jrLvME7VuLW6NRysbiZtenTB9QcNlR9RPKK4LFfZn60=
 github.com/lrstanley/girc v0.0.0-20210611213246-771323f1624b/go.mod h1:liX5MxHPrwgHaKowoLkYGwbXfYABh1jbZ6FpElbGF1I=
 github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=

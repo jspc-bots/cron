@@ -53,7 +53,7 @@ func New(user, password, server, allows string, verify bool, c *cron.Cron) (b Bo
 	return
 }
 
-func (b *Bot) addSchedule(originator string, groups []string) (err error) {
+func (b *Bot) addSchedule(originator, channel string, groups []string) (err error) {
 	schedule := groups[1]
 	command := groups[2]
 	args := groups[3]
@@ -68,17 +68,17 @@ func (b *Bot) addSchedule(originator string, groups []string) (err error) {
 		irc:      b.bottom.Client,
 	}
 
-	_, err = b.cron.AddJob(schedule, c)
+	id, err := b.cron.AddJob(schedule, c)
 	if err != nil {
 		return
 	}
 
-	b.bottom.Client.Cmd.Message(Chan, "Added new job schedule. Use /msg scheduler show schedule to see schedule (this is a noisy command and may be flood protected, be kind to other people on this channel)")
+	b.bottom.Client.Cmd.Messagef(channel, "Added new job (ID: %d) to schedule on behalf of %s", id, originator)
 
 	return
 }
 
-func (b *Bot) deleteSchedule(originator string, groups []string) (err error) {
+func (b *Bot) deleteSchedule(originator, channel string, groups []string) (err error) {
 	id, err := strconv.Atoi(groups[1])
 	if err != nil {
 		return
@@ -86,12 +86,12 @@ func (b *Bot) deleteSchedule(originator string, groups []string) (err error) {
 
 	b.cron.Remove(cron.EntryID(id))
 
-	b.bottom.Client.Cmd.Messagef(Chan, "Removed job %d from schedule. Use /msg scheduler show schedule to see schedule (this is a noisy command and may be flood protected, be kind to other people on this channel)", id)
+	b.bottom.Client.Cmd.Messagef(channel, "Removed job %d from schedule for %s", id, originator)
 
 	return
 }
 
-func (b *Bot) showSchedule(_ string, _ []string) (err error) {
+func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 	sb := strings.Builder{}
 
 	table := tablewriter.NewWriter(&sb)
@@ -114,7 +114,7 @@ func (b *Bot) showSchedule(_ string, _ []string) (err error) {
 		b.bottom.Client.Cmd.Message(Chan, line)
 	}
 
-	b.bottom.Client.Cmd.Messagef(Chan, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
+	b.bottom.Client.Cmd.Messagef(channel, "(as far as I know, it's now %s)", time.Now().In(TZ).String())
 
 	return
 }
