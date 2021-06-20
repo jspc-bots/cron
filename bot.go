@@ -101,7 +101,7 @@ func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 		c := entry.Job.(Command)
 
 		args := c.Args
-		if len(args) > 27 {
+		if len(args) > 15 {
 			args = fmt.Sprintf("%s...", args[:12])
 		}
 
