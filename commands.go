@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"strings"
 	"text/template"
 	"time"
@@ -51,6 +52,7 @@ func (c *Command) Event() (e *girc.Event, err error) {
 func (c Command) Run() {
 	e, err := c.Event()
 	if err != nil {
+		log.Print(err.Error())
 		c.irc.Cmd.Messagef(Chan, "scheduled task errored :/ %v", err)
 
 		return

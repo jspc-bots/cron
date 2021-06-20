@@ -55,6 +55,8 @@ func main() {
 	}
 
 	for _, command := range commands {
+		log.Printf("adding %+v", command)
+
 		command.irc = c.bottom.Client
 
 		_, err = c.cron.AddJob(command.Schedule, command)
