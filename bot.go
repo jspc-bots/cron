@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -110,8 +109,6 @@ func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 	}
 
 	table.Render()
-
-	log.Printf("sending to: %s", channel)
 
 	for _, line := range strings.Split(sb.String(), "\n") {
 		b.bottom.Client.Cmd.Message(channel, line)
