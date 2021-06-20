@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Vals = TemplateValues{Time: time.Now().Local(), Date: time.Now().Local().Format("2006. 01. 02")}
+	Vals = TemplateValues{Time: time.Now().In(TZ), Date: time.Now().In(TZ).Format("2006. 01. 02")}
 )
 
 type TemplateValues struct {
