@@ -9,10 +9,6 @@ import (
 	"github.com/lrstanley/girc"
 )
 
-var (
-	Vals = TemplateValues{Time: time.Now().In(TZ), Date: time.Now().In(TZ).Format("2006. 01. 02")}
-)
-
 type TemplateValues struct {
 	Time time.Time
 	Date string
@@ -36,7 +32,7 @@ func (c *Command) Event() (e *girc.Event, err error) {
 
 	sb := strings.Builder{}
 
-	err = tmpl.Execute(&sb, Vals)
+	err = tmpl.Execute(&sb, TemplateValues{Time: time.Now().In(TZ), Date: time.Now().In(TZ).Format("2006. 01. 02")})
 	if err != nil {
 		return
 	}
