@@ -1,6 +1,6 @@
-# IRC Timer Bot
+# Cron Bit
 
-The IRC bot runs a series of pre-determined irc commands on a schedule. It also accepts new commands from trusted users. These users need to be passed to the bot via an env var, and the bot restarted because:
+This IRC bot runs a series of pre-determined irc commands on a schedule. It also accepts new commands from trusted users. These users need to be passed to the bot via an env var, and the bot restarted because:
 
 1. The permissions the bot potentially needs (like chanops for setting topics) means the bot could be easily abused
 1. Restarting the bot is a conscious decision, and so is less likely to be done accidentally/ through security flaw

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jspc/bottom"
+	"github.com/jspc-bots/bottom"
 	"github.com/lrstanley/girc"
 	"github.com/olekukonko/tablewriter"
 	"github.com/robfig/cron/v3"
