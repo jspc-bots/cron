@@ -58,7 +58,7 @@ func (b *Bot) addSchedule(originator, channel string, groups []string) (err erro
 	command := groups[2]
 	args := groups[3]
 
-	target := Chan
+	target := channel
 
 	c := Command{
 		Schedule: schedule,
@@ -84,7 +84,16 @@ func (b *Bot) deleteSchedule(originator, channel string, groups []string) (err e
 		return
 	}
 
-	b.cron.Remove(cron.EntryID(id))
+	e := b.cron.Entry(cron.EntryID(id))
+	if !e.Valid() {
+		return fmt.Errorf("%d is not a valid cronjob", id)
+	}
+
+	if e.Job.(Command).Target != channel {
+		return fmt.Errorf("cronjobs can only be deleted from the channel which owns them")
+	}
+
+	b.cron.Remove(e.ID)
 
 	b.bottom.Client.Cmd.Messagef(channel, "Removed job %d from schedule for %s", id, originator)
 
@@ -100,6 +109,10 @@ func (b *Bot) showSchedule(_, channel string, _ []string) (err error) {
 	for _, entry := range b.cron.Entries() {
 		c, ok := entry.Job.(Command)
 		if !ok {
+			continue
+		}
+
+		if c.Target != channel {
 			continue
 		}
 
